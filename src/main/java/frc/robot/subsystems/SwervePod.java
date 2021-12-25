@@ -19,10 +19,10 @@ import frc.robot.Constants.DRIVETRAIN;
 
 public class SwervePod {
     
-    private final int mID;
     private final CANSparkMax mDriveMotor;
     private final CANSparkMax mTurnMotor;
     private final CANEncoder mDriveEncoder;
+    private final boolean mIsDriveEncoderReversed;
     private final Encoder mTurnEncoder;
     private final DutyCycleEncoder mZeroingEncoder;
     private final PIDController mDrivePIDController;
@@ -38,11 +38,11 @@ public class SwervePod {
      * Output telemetry to the network tables.
      * */  
     public void OutputTelemetry () {
-        mDriveEncoderDistanceEntry.setNumber( mDriveEncoder.getPosition() );    // meters @ wheel
-        mDriveEncoderVelocityEntry.setNumber( mDriveEncoder.getVelocity() );    // rotations per minute @ motor
+        mDriveEncoderDistanceEntry.setNumber( GetDrivePosition() );             // meters @ wheel
+        mDriveEncoderVelocityEntry.setNumber( GetDriveVelocity() );             // meters per second @ wheel
         mTurnEncoderDistanceEntry.setNumber( mTurnEncoder.getDistance() );      // radians
         mTurnEncoderVelocityEntry.setNumber( mTurnEncoder.getRate() );          // radians per second
-        mZeroingEncoderDistanceEntry.setNumber( mZeroingEncoder.getDistance()); // radians [0,2*pi)
+        mZeroingEncoderDistanceEntry.setNumber( mZeroingEncoder.getDistance()); // radians
     }
 
 
@@ -52,7 +52,7 @@ public class SwervePod {
      * @return The current state of the serve pod.
      */
     public SwerveModuleState GetState () {
-        return new SwerveModuleState( mDriveEncoder.getVelocity(), new Rotation2d( mTurnEncoder.get() ) );
+        return new SwerveModuleState( GetDriveVelocity(), new Rotation2d( mTurnEncoder.get() ) );
     }
 
 
@@ -67,7 +67,7 @@ public class SwervePod {
         SwerveModuleState state = SwerveModuleState.optimize( DesiredState, new Rotation2d( mTurnEncoder.get() ) );
 
         // Calculate the drive output from the drive PID controller.
-        final double driveOutput = mDrivePIDController.calculate(  mDriveEncoder.getVelocity(), state.speedMetersPerSecond );
+        final double driveOutput = mDrivePIDController.calculate(  GetDriveVelocity(), state.speedMetersPerSecond );
 
         // Calculate the turning motor output from the turning PID controller.
         final double turnOutput = mTurnPIDController.calculate( mTurnEncoder.get(), state.angle.getRadians() );
@@ -90,10 +90,9 @@ public class SwervePod {
      * Configure the PWM ducty cycle encoder and the quadaratutre encoder.
      */  
     private void ConfigureEncoders () {
-        mDriveEncoder.setPositionConversionFactor(
-            Math.PI * Units.inchesToMeters( DRIVETRAIN.WHEEL_DIAMETER_INCH ) / DRIVETRAIN.GEAR_RATIO );  // rotations -> meters @ wheel
-        mDriveEncoder.setVelocityConversionFactor( 
-            Math.PI * Units.inchesToMeters( DRIVETRAIN.WHEEL_DIAMETER_INCH ) / 60.0 / DRIVETRAIN.GEAR_RATIO ); // RPM > meters per second
+        double baseConversion = Math.PI * Units.inchesToMeters( DRIVETRAIN.WHEEL_DIAMETER_INCH ) / DRIVETRAIN.GEAR_RATIO;
+        mDriveEncoder.setPositionConversionFactor( baseConversion );            // rotations @ motor -> meters @ wheel
+        mDriveEncoder.setVelocityConversionFactor( baseConversion / 60.0 );     // RPM @ motor -> meters per second @ wheel
         mTurnEncoder.setDistancePerPulse( 2.0 * Math.PI / 1024.0 );             // Degrees per encoder pulse
         mZeroingEncoder.setDistancePerRotation( 2 * Math.PI );
         // mTurnEncoder.setMinRate( 1.0 );                                         // Rate at which mechanism is considered "stopped"
@@ -103,10 +102,36 @@ public class SwervePod {
 
 
     /**
+     * 
+     * @return
+     */
+    private double GetDriveVelocity () {
+        return mIsDriveEncoderReversed ? -mDriveEncoder.getVelocity() : mDriveEncoder.getVelocity();
+    }
+
+
+    /**
+     * 
+     * @return
+     */
+    private double GetDrivePosition () {
+        return mIsDriveEncoderReversed ? -mDriveEncoder.getPosition() : mDriveEncoder.getPosition();
+    }    
+
+
+    /**
      * The constructor for the SwervePod class.
-     */  
-    public SwervePod ( int swervePodID, int driveMotorID, int turnMotorID, int quadAChannel, int quadBChannel, int pwmChannel ) {
-        mID = swervePodID;
+     * @param swervePodID
+     * @param driveMotorID
+     * @param turnMotorID
+     * @param quadAChannel
+     * @param quadBChannel
+     * @param pwmChannel
+     * @param isDriveEncoderReversed
+     */
+    public SwervePod ( String swervePodID, int driveMotorID, int turnMotorID, int quadAChannel, int quadBChannel, int pwmChannel, boolean isDriveEncoderReversed ) {
+
+        mIsDriveEncoderReversed = isDriveEncoderReversed;
         mDriveMotor = new CANSparkMax( driveMotorID, MotorType.kBrushless );
         mTurnMotor = new CANSparkMax( turnMotorID, MotorType.kBrushless );
         SparkMax.SetDefaultConfig( mDriveMotor );
@@ -124,11 +149,11 @@ public class SwervePod {
                                               Units.degreesToRadians( DRIVETRAIN.MAX_TURN_ACCELERATION_DPSS ) ) );
         mTurnPIDController.enableContinuousInput( -Math.PI, Math.PI );
 
-        mDriveEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+mID+"/Drive_Distance(m)");
-        mDriveEncoderVelocityEntry = NetworkTableInstance.getDefault().getEntry("/"+mID+"/Drive_Velocity(mps)");
-        mTurnEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+mID+"/Turn_Distance(rad)");
-        mTurnEncoderVelocityEntry = NetworkTableInstance.getDefault().getEntry("/"+mID+"/Turn_Velocity(rad/s)");
-        mZeroingEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+mID+"/Zeroing_Distance(rad)");
+        mDriveEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Drive_Distance(m)");
+        mDriveEncoderVelocityEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Drive_Velocity(mps)");
+        mTurnEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Turn_Distance(rad)");
+        mTurnEncoderVelocityEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Turn_Velocity(rad/s)");
+        mZeroingEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Zeroing_Distance(rad)");
         
         mDriveMotor.set( 0.0 );
         mTurnMotor.set( 0.0 );

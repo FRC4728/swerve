@@ -15,33 +15,37 @@ import frc.robot.Constants.HARDWARE;
 public class Drivetrain {
     
     private final SwervePod mFrontLeft =
-        new SwervePod(  1, 
+        new SwervePod(  "FrontLeft", 
                         HARDWARE.FRONT_LEFT_DRIVE_MOTOR_ID, 
                         HARDWARE.FRONT_LEFT_TURN_MOTOR_ID,
                         HARDWARE.FRONT_LEFT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.FRONT_LEFT_QUAD_B_DIO_CHANNEL, 
-                        HARDWARE.FRONT_LEFT_PWM_DIO_CHANNEL ); 
+                        HARDWARE.FRONT_LEFT_PWM_DIO_CHANNEL,
+                        false ); 
     private final SwervePod mRearLeft =
-        new SwervePod(  2,
-                        HARDWARE.REAR_RIGHT_DRIVE_MOTOR_ID,
-                        HARDWARE.REAR_RIGHT_TURN_MOTOR_ID,
-                        HARDWARE.REAR_RIGHT_QUAD_A_DIO_CHANNEL,
-                        HARDWARE.REAR_RIGHT_QUAD_B_DIO_CHANNEL,
-                        HARDWARE.REAR_RIGHT_PWM_DIO_CHANNEL );
+        new SwervePod(  "RearLeft",
+                        HARDWARE.REAR_LEFT_DRIVE_MOTOR_ID,
+                        HARDWARE.REAR_LEFT_TURN_MOTOR_ID,
+                        HARDWARE.REAR_LEFT_QUAD_A_DIO_CHANNEL,
+                        HARDWARE.REAR_LEFT_QUAD_B_DIO_CHANNEL,
+                        HARDWARE.REAR_LEFT_PWM_DIO_CHANNEL,
+                        false );
     private final SwervePod mFrontRight =
-        new SwervePod(  3,
+        new SwervePod(  "FrontRight",
                         HARDWARE.FRONT_RIGHT_DRIVE_MOTOR_ID,
                         HARDWARE.FRONT_RIGHT_TURN_MOTOR_ID,
                         HARDWARE.FRONT_RIGHT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.FRONT_RIGHT_QUAD_B_DIO_CHANNEL,
-                        HARDWARE.FRONT_RIGHT_PWM_DIO_CHANNEL );
+                        HARDWARE.FRONT_RIGHT_PWM_DIO_CHANNEL,
+                        true );
     private final SwervePod mRearRight =
-        new SwervePod(  4,
+        new SwervePod(  "RearRight",
                         HARDWARE.REAR_RIGHT_DRIVE_MOTOR_ID,
                         HARDWARE.REAR_RIGHT_TURN_MOTOR_ID,
                         HARDWARE.REAR_RIGHT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.REAR_RIGHT_QUAD_B_DIO_CHANNEL,
-                        HARDWARE.REAR_RIGHT_PWM_DIO_CHANNEL );
+                        HARDWARE.REAR_RIGHT_PWM_DIO_CHANNEL,
+                        true );
     private final Gyro mGyro = new ADXRS450_Gyro();
     private final SwerveDriveKinematics kDriveKinematics =
         new SwerveDriveKinematics(
@@ -73,7 +77,7 @@ public class Drivetrain {
      */  
     public void PeriodicUpdate () {
         mOdometry.update( mGyro.getRotation2d(), mFrontLeft.GetState(), mRearLeft.GetState(), mFrontRight.GetState(), mRearRight.GetState());
-      }
+    }
 
 
     /**
