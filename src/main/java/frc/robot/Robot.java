@@ -10,7 +10,7 @@ public class Robot extends TimedRobot {
     
     @Override
     public void robotInit() {
-        LiveWindow.disableAllTelemetry();
+        //LiveWindow.disableAllTelemetry();
     }
     
     @Override
@@ -25,10 +25,18 @@ public class Robot extends TimedRobot {
     public void autonomousPeriodic() {}
     
     @Override
-    public void teleopInit() {}
+    public void teleopInit() {
+        if ( !mDrivetrain.GetIsHomingFinshed() ) {
+            mDrivetrain.StartingHomingPods();
+        }
+    }
     
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+        if ( !mDrivetrain.GetIsHomingFinshed() ) {
+            mDrivetrain.HomingPodsUpdate();
+        }
+    }
     
     @Override
     public void disabledInit() {}

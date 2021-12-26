@@ -21,7 +21,8 @@ public class Drivetrain {
                         HARDWARE.FRONT_LEFT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.FRONT_LEFT_QUAD_B_DIO_CHANNEL, 
                         HARDWARE.FRONT_LEFT_PWM_DIO_CHANNEL,
-                        false ); 
+                        false,
+                        DRIVETRAIN.FRONT_LEFT_ZERO_RAD ); 
     private final SwervePod mRearLeft =
         new SwervePod(  "RearLeft",
                         HARDWARE.REAR_LEFT_DRIVE_MOTOR_ID,
@@ -29,7 +30,8 @@ public class Drivetrain {
                         HARDWARE.REAR_LEFT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.REAR_LEFT_QUAD_B_DIO_CHANNEL,
                         HARDWARE.REAR_LEFT_PWM_DIO_CHANNEL,
-                        false );
+                        false,
+                        DRIVETRAIN.REAR_LEFT_ZERO_RAD );
     private final SwervePod mFrontRight =
         new SwervePod(  "FrontRight",
                         HARDWARE.FRONT_RIGHT_DRIVE_MOTOR_ID,
@@ -37,7 +39,8 @@ public class Drivetrain {
                         HARDWARE.FRONT_RIGHT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.FRONT_RIGHT_QUAD_B_DIO_CHANNEL,
                         HARDWARE.FRONT_RIGHT_PWM_DIO_CHANNEL,
-                        true );
+                        true,
+                        DRIVETRAIN.FRONT_RIGHT_ZERO_RAD );
     private final SwervePod mRearRight =
         new SwervePod(  "RearRight",
                         HARDWARE.REAR_RIGHT_DRIVE_MOTOR_ID,
@@ -45,7 +48,8 @@ public class Drivetrain {
                         HARDWARE.REAR_RIGHT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.REAR_RIGHT_QUAD_B_DIO_CHANNEL,
                         HARDWARE.REAR_RIGHT_PWM_DIO_CHANNEL,
-                        true );
+                        true,
+                        DRIVETRAIN.REAR_RIGHT_ZERO_RAD );
     private final Gyro mGyro = new ADXRS450_Gyro();
     private final SwerveDriveKinematics kDriveKinematics =
         new SwerveDriveKinematics(
@@ -59,7 +63,7 @@ public class Drivetrain {
                                 -Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 ) );
     private SwerveDriveOdometry mOdometry =
         new SwerveDriveOdometry( kDriveKinematics, mGyro.getRotation2d() );
-
+        private boolean mIsHomingFinshed;
 
     /**
      * Output telemetry to the network tables.
@@ -119,6 +123,43 @@ public class Drivetrain {
         mRearLeft.SetDesiredState( swerveModuleStates[2] );
         mRearRight.SetDesiredState( swerveModuleStates[3] );
     }
+    
+
+
+
+    public void StartingHomingPods () {
+        mFrontLeft.StartHoming();
+        mRearLeft.StartHoming();
+        mFrontRight.StartHoming();
+        mFrontRight.StartHoming();
+
+    }
+
+
+    public void HomingPodsUpdate () {
+        if ( !mIsHomingFinshed ) {
+            if ( mFrontLeft.GetIsHomingFinshed() && mRearLeft.GetIsHomingFinshed() && mFrontRight.GetIsHomingFinshed() && mFrontRight.GetIsHomingFinshed() ) {
+                mIsHomingFinshed = true;
+                mFrontLeft.ResetEncoders();
+                mRearLeft.ResetEncoders();
+                mFrontRight.ResetEncoders();
+                mFrontRight.ResetEncoders();
+            } else {
+                mFrontLeft.HomingUpdate();
+                mRearLeft.HomingUpdate();
+                mFrontRight.HomingUpdate();
+                mFrontRight.HomingUpdate();
+            }
+        }
+    }
+
+    
+    public boolean GetIsHomingFinshed () {
+        return mIsHomingFinshed;
+    }
+
+
+
 
 
     /** 
@@ -157,6 +198,8 @@ public class Drivetrain {
     /**
     * The constructor for the Drivetrain class.
     */  
-    public Drivetrain () {}
+    public Drivetrain () {
+        mIsHomingFinshed = false;
+    }
 
 }
