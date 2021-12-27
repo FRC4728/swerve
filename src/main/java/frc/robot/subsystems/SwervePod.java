@@ -19,15 +19,17 @@ import frc.robot.Constants.DRIVETRAIN;
 
 public class SwervePod {
 
+    private final String id;
     private final CANSparkMax mDriveMotor;
     private final CANSparkMax mTurnMotor;
     private final CANEncoder mDriveEncoder;
     private final boolean mIsDriveEncoderReversed;
+    private final boolean mIsTurnEncoderReversed;
     private final Encoder mTurnEncoder;
     private final DutyCycleEncoder mZeroingEncoder;
     private final PIDController mDrivePIDController;
     private final ProfiledPIDController mTurnPIDController;
-    private SwerveModuleState mHomingGoal;
+    private double mHomingGoal;
     private boolean mIsHomingFinshed;
     private double mDriveOutput;
     private double mTurnOutput;
@@ -36,6 +38,8 @@ public class SwervePod {
     private NetworkTableEntry mTurnEncoderDistanceEntry;
     private NetworkTableEntry mTurnEncoderVelocityEntry;
     private NetworkTableEntry mZeroingEncoderDistanceEntry;
+    private NetworkTableEntry mHomingEntry;
+    private NetworkTableEntry mHomingGoalEntry;
     private NetworkTableEntry mDriveOutputEntry;
     private NetworkTableEntry mTurnOutputEntry;
 
@@ -44,11 +48,13 @@ public class SwervePod {
      * Output telemetry to the network tables.
      * */  
     public void OutputTelemetry () {
-        mDriveEncoderDistanceEntry.setNumber( GetDrivePosition() );             // meters @ wheel
+        mDriveEncoderDistanceEntry.setNumber( GetDriveDistance() );             // meters @ wheel
         mDriveEncoderVelocityEntry.setNumber( GetDriveVelocity() );             // meters per second @ wheel
-        mTurnEncoderDistanceEntry.setNumber( mTurnEncoder.getDistance() );      // radians
-        mTurnEncoderVelocityEntry.setNumber( mTurnEncoder.getRate() );          // radians per second
+        mTurnEncoderDistanceEntry.setNumber( GetTurnDistance() );               // radians
+        mTurnEncoderVelocityEntry.setNumber( GetTurnVelocity() );               // radians per second
         mZeroingEncoderDistanceEntry.setNumber( mZeroingEncoder.getDistance()); // radians
+        mHomingEntry.setBoolean( mIsHomingFinshed );
+        mHomingGoalEntry.setNumber( mHomingGoal );
         mDriveOutputEntry.setNumber( mDriveOutput );
         mTurnOutputEntry.setNumber( mTurnOutput );
     
@@ -61,7 +67,7 @@ public class SwervePod {
      * @return The current state of the serve pod.
      */
     public SwerveModuleState GetState () {
-        return new SwerveModuleState( GetDriveVelocity(), new Rotation2d( mTurnEncoder.get() ) );
+        return new SwerveModuleState( GetDriveVelocity(), new Rotation2d( GetTurnDistance() ) );
     }
 
 
@@ -73,40 +79,94 @@ public class SwervePod {
     public void SetDesiredState ( SwerveModuleState DesiredState ) {
         
         // Optimize the reference state to avoid spinning further than 90 degrees
-        SwerveModuleState state = SwerveModuleState.optimize( DesiredState, new Rotation2d( mTurnEncoder.get() ) );
+        SwerveModuleState state = SwerveModuleState.optimize( DesiredState, new Rotation2d( GetTurnDistance() ) );
+
+        //SwerveModuleState state = DesiredState;
 
         // Calculate the drive output from the drive PID controller.
         mDriveOutput = mDrivePIDController.calculate(  GetDriveVelocity(), state.speedMetersPerSecond );
 
         // Calculate the turning motor output from the turning PID controller.
-        mTurnOutput = mTurnPIDController.calculate( mTurnEncoder.get(), state.angle.getRadians() );
+        mTurnOutput = mTurnPIDController.calculate( GetTurnDistance(), state.angle.getRadians() );
 
         mDriveMotor.set( mDriveOutput );
         mTurnMotor.set( mTurnOutput );
-    }
+        
 
+        // if ( id.equals("FrontLeft")) {
+        //     // mDriveMotor.set( 0.0 );
+        //     // mTurnMotor.set( mTurnOutput );
+        //     System.out.println( DesiredState.toString() );
+        //     //System.out.println( "Output: "+mTurnOutput);
+        // }
+    }
     
     
     
     public void StartHoming () {
-        mTurnPIDController.setTolerance( Units.degreesToRadians( 1.0 ) );
-        mTurnPIDController.reset( mTurnEncoder.get() );
+        mTurnPIDController.setTolerance( Units.degreesToRadians( 3.0 ) );
+        mTurnPIDController.reset( GetTurnDistance() );
+        mHomingGoal = mHomingGoal - mZeroingEncoder.getDistance();
+        mTurnPIDController.setGoal( new TrapezoidProfile.State( mHomingGoal, 0.0) );
         HomingUpdate();
     }
 
     public void HomingUpdate () {
         if ( mTurnPIDController.atGoal() ) {
             mIsHomingFinshed = true;
-        } else {
-            SetDesiredState( mHomingGoal );
+            mDriveOutput = 0.0;
+            mTurnOutput = 0.0;
+            mDriveMotor.set( mDriveOutput );
+            mTurnMotor.set( mTurnOutput );
+            ResetEncoders();          
+        } 
+        else {
+            SetDesiredState( new SwerveModuleState( 0.0, new Rotation2d( mHomingGoal ) ) );
         }
     }
 
-    public boolean GetIsHomingFinshed () {
+    public boolean IsHomingFinshed () {
         return mIsHomingFinshed;
     }
 
+    
+    // public void ResetHoming () {
+    //     DriverStation.reportWarning( "Resetting swerve pod homing", false);
+    // }
 
+
+
+    /**
+     * 
+     * @return
+     */
+    private double GetTurnVelocity () {
+        return mIsTurnEncoderReversed ? -mTurnEncoder.getRate() : mTurnEncoder.getRate();
+    }
+
+    /**
+     * 
+     * @return
+     */    
+    private double GetTurnDistance () {
+        return mIsTurnEncoderReversed ? -mTurnEncoder.getDistance() + 0.00001 : mTurnEncoder.getDistance() + 0.00001;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    private double GetDriveVelocity () {
+        return mIsDriveEncoderReversed ? -mDriveEncoder.getVelocity() : mDriveEncoder.getVelocity();
+    }
+
+    /**
+     * 
+     * @return
+     */
+    private double GetDriveDistance () {
+        return mIsDriveEncoderReversed ? -mDriveEncoder.getPosition() : mDriveEncoder.getPosition();
+    }  
 
 
 
@@ -116,6 +176,7 @@ public class SwervePod {
     public void ResetEncoders() {
         mDriveEncoder.setPosition(0);
         mTurnEncoder.reset();
+        
     }
 
 
@@ -135,24 +196,6 @@ public class SwervePod {
 
 
     /**
-     * 
-     * @return
-     */
-    private double GetDriveVelocity () {
-        return mIsDriveEncoderReversed ? -mDriveEncoder.getVelocity() : mDriveEncoder.getVelocity();
-    }
-
-
-    /**
-     * 
-     * @return
-     */
-    private double GetDrivePosition () {
-        return mIsDriveEncoderReversed ? -mDriveEncoder.getPosition() : mDriveEncoder.getPosition();
-    }    
-
-
-    /**
      * The constructor for the SwervePod class.
      * @param swervePodID
      * @param driveMotorID
@@ -162,9 +205,12 @@ public class SwervePod {
      * @param pwmChannel
      * @param isDriveEncoderReversed
      */
-    public SwervePod ( String swervePodID, int driveMotorID, int turnMotorID, int quadAChannel, int quadBChannel, int pwmChannel, boolean isDriveEncoderReversed, double zero_rad ) {
+    public SwervePod ( String swervePodID, int driveMotorID, int turnMotorID, int quadAChannel, int quadBChannel, int pwmChannel, boolean isDriveEncoderReversed, boolean isTurnEncoderReversed, double zero_rad ) {
+        id = swervePodID;
         mIsHomingFinshed = false;
+        mHomingGoal = zero_rad;
         mIsDriveEncoderReversed = isDriveEncoderReversed;
+        mIsTurnEncoderReversed = isTurnEncoderReversed;
         mDriveMotor = new CANSparkMax( driveMotorID, MotorType.kBrushless );
         mTurnMotor = new CANSparkMax( turnMotorID, MotorType.kBrushless );
         SparkMax.SetDefaultConfig( mDriveMotor );
@@ -178,8 +224,8 @@ public class SwervePod {
 
         mDrivePIDController = new PIDController( DRIVETRAIN.DRIVE_P_GAIN, 0, DRIVETRAIN.DRIVE_D_GAIN );
         mTurnPIDController = new ProfiledPIDController( DRIVETRAIN.TURN_P_GAIN, 0, DRIVETRAIN.TURN_D_GAIN, 
-            new TrapezoidProfile.Constraints( Units.degreesToRadians( DRIVETRAIN.MAX_TURN_VELOCITY_DPS ), 
-                                              Units.degreesToRadians( DRIVETRAIN.MAX_TURN_ACCELERATION_DPSS ) ) );
+            new TrapezoidProfile.Constraints( DRIVETRAIN.MAX_TURN_VELOCITY_RPS, 
+                                              DRIVETRAIN.MAX_TURN_ACCELERATION_RPSS ) );
         mTurnPIDController.enableContinuousInput( -Math.PI, Math.PI );
 
         mDriveEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Drive_Distance(m)");
@@ -187,16 +233,10 @@ public class SwervePod {
         mTurnEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Turn_Distance(rad)");
         mTurnEncoderVelocityEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Turn_Velocity(rad/s)");
         mZeroingEncoderDistanceEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Zeroing_Distance(rad)");
+        mHomingEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Homing_Finished");
+        mHomingGoalEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Homing_Goal");
         mDriveOutputEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Output_Drive");
         mTurnOutputEntry = NetworkTableInstance.getDefault().getEntry("/"+swervePodID+"/Output_Turn");
-            
-        mDriveOutput = 0.0;
-        mTurnOutput = 0.0;
-        mDriveMotor.set( mDriveOutput );
-        mTurnMotor.set( mTurnOutput );
-
-        // TODO: need to verify the encoder is giving good data
-        mHomingGoal = new SwerveModuleState( 0.0, new Rotation2d( zero_rad - mZeroingEncoder.getDistance() ) );
 
     }
     

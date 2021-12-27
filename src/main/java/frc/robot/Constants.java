@@ -34,24 +34,24 @@ public final class Constants {
         public static final double WHEEL_DIAMETER_INCH = 4.0;                   // Average wheel diameter (should all be very, very close)
         public static final double TRACK_WIDTH_INCH = 18.0;                     // Distance between centers of right and left wheels on robot in meters
         public static final double WHEEL_BASE_INCH = 17.125;                    // Distance between front and back wheels on robot in meters
-        public static final double FRONT_LEFT_ZERO_RAD = 3.201;                 // The PWM encoder angle for zero'ing the wheel
-        public static final double REAR_LEFT_ZERO_RAD = 2.562;                  // The PWM encoder angle for zero'ing the wheel
-        public static final double FRONT_RIGHT_ZERO_RAD = 3.455;                // The PWM encoder angle for zero'ing the wheel
-        public static final double REAR_RIGHT_ZERO_RAD = 0.223;                 // The PWM encoder angle for zero'ing the wheel
-        public static final double TURN_P_GAIN = 1.0;                           // The P-gain of the PID turning controller
-        public static final double TURN_D_GAIN = 0.0;                           // The D-gain of the PID turning controller
-        public static final double DRIVE_P_GAIN = 0.0;               // The P-gain of the PID driving controller
+        public static final double FRONT_LEFT_ZERO_RAD = 3.20;                  // The PWM encoder angle for zero'ing the wheel
+        public static final double REAR_LEFT_ZERO_RAD = 2.30;                  // The PWM encoder angle for zero'ing the wheel
+        public static final double FRONT_RIGHT_ZERO_RAD = 3.30;                 // The PWM encoder angle for zero'ing the wheel
+        public static final double REAR_RIGHT_ZERO_RAD = 3.19;                 // The PWM encoder angle for zero'ing the wheel
+        public static final double TURN_P_GAIN = 0.7;                           // The P-gain of the PID turning controller
+        public static final double TURN_D_GAIN = 0.01;                          // The D-gain of the PID turning controller
+        public static final double DRIVE_P_GAIN = 0.1;               // The P-gain of the PID driving controller
         public static final double DRIVE_D_GAIN = 0.0;               // The D-gain of the PID driving controller
-        public static final double MAX_TURN_VELOCITY_DPS = 180.0;        // The maximum angular velocity in radians per second
-        public static final double MAX_TURN_ACCELERATION_DPSS = 180.0;        // The maximum angular acceleration in radians per second
-        public static final double MAX_DRIVE_VELOCITY_FPS = 0.0;          // The maximum drive velocity in meters per second
-        public static final double MAX_DRIVE_ACCELERATION_FPSS = 0.0;          // The maximum drive velocity in meters per second
+        public static final double MAX_TURN_VELOCITY_RPS = 20*Math.PI;        // The maximum angular velocity in radians per second
+        public static final double MAX_TURN_ACCELERATION_RPSS = 20*Math.PI;        // The maximum angular acceleration in radians per second
+        public static final double MAX_DRIVE_VELOCITY_MPS = 1.0;               // The maximum drive velocity in meters per second
+        public static final double MAX_DRIVE_ACCELERATION_MPSS = 0.0;          // The maximum drive velocity in meters per second
 
     }
 
     public static final class DRIVER {
-        public static final int JOYSTICK_TURN = 0;                              // Turn joystick port number
-        public static final int JOYSTICK_THROTTLE = 1;                          // Throttle joystick port number
+        public static final int LEFT_JOYSTICK = 0;                              // Left joystick port number
+        //public static final int RIGHT_JOYSTICK = 1;                             // Right joystick port number
         public static final int DRIVER_BUTTON_BOARD = 2;                        // Drive button controller port number
     }
 

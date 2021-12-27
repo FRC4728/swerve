@@ -1,6 +1,6 @@
 package frc.robot.subsystems;
 
-
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.kinematics.ChassisSpeeds;
@@ -22,6 +22,7 @@ public class Drivetrain {
                         HARDWARE.FRONT_LEFT_QUAD_B_DIO_CHANNEL, 
                         HARDWARE.FRONT_LEFT_PWM_DIO_CHANNEL,
                         false,
+                        true,
                         DRIVETRAIN.FRONT_LEFT_ZERO_RAD ); 
     private final SwervePod mRearLeft =
         new SwervePod(  "RearLeft",
@@ -31,6 +32,7 @@ public class Drivetrain {
                         HARDWARE.REAR_LEFT_QUAD_B_DIO_CHANNEL,
                         HARDWARE.REAR_LEFT_PWM_DIO_CHANNEL,
                         false,
+                        true,
                         DRIVETRAIN.REAR_LEFT_ZERO_RAD );
     private final SwervePod mFrontRight =
         new SwervePod(  "FrontRight",
@@ -40,6 +42,7 @@ public class Drivetrain {
                         HARDWARE.FRONT_RIGHT_QUAD_B_DIO_CHANNEL,
                         HARDWARE.FRONT_RIGHT_PWM_DIO_CHANNEL,
                         true,
+                        true,
                         DRIVETRAIN.FRONT_RIGHT_ZERO_RAD );
     private final SwervePod mRearRight =
         new SwervePod(  "RearRight",
@@ -48,6 +51,7 @@ public class Drivetrain {
                         HARDWARE.REAR_RIGHT_QUAD_A_DIO_CHANNEL,
                         HARDWARE.REAR_RIGHT_QUAD_B_DIO_CHANNEL,
                         HARDWARE.REAR_RIGHT_PWM_DIO_CHANNEL,
+                        true,
                         true,
                         DRIVETRAIN.REAR_RIGHT_ZERO_RAD );
     private final Gyro mGyro = new ADXRS450_Gyro();
@@ -63,15 +67,15 @@ public class Drivetrain {
                                 -Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 ) );
     private SwerveDriveOdometry mOdometry =
         new SwerveDriveOdometry( kDriveKinematics, mGyro.getRotation2d() );
-        private boolean mIsHomingFinshed;
+        private boolean IsHomingFinshed;
 
     /**
      * Output telemetry to the network tables.
      */  
     public void OutputTelemetry () {
         mFrontLeft.OutputTelemetry();
-        mRearLeft.OutputTelemetry();
         mFrontRight.OutputTelemetry();
+        mRearLeft.OutputTelemetry();
         mRearRight.OutputTelemetry();
     }
 
@@ -80,7 +84,11 @@ public class Drivetrain {
      *  This function will make periodic updates.
      */  
     public void PeriodicUpdate () {
-        mOdometry.update( mGyro.getRotation2d(), mFrontLeft.GetState(), mRearLeft.GetState(), mFrontRight.GetState(), mRearRight.GetState());
+        mOdometry.update( mGyro.getRotation2d(), 
+                          mFrontLeft.GetState(),
+                          mFrontRight.GetState(), 
+                          mRearLeft.GetState(), 
+                          mRearRight.GetState());
     }
 
 
@@ -116,7 +124,7 @@ public class Drivetrain {
         var swerveModuleStates = kDriveKinematics.toSwerveModuleStates(
             fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rot, mGyro.getRotation2d() )
                           : new ChassisSpeeds( xSpeed, ySpeed, rot ) );
-        SwerveDriveKinematics.normalizeWheelSpeeds( swerveModuleStates, Units.feetToMeters( DRIVETRAIN.MAX_DRIVE_VELOCITY_FPS ) );
+        SwerveDriveKinematics.normalizeWheelSpeeds( swerveModuleStates, DRIVETRAIN.MAX_DRIVE_VELOCITY_MPS );
 
         mFrontLeft.SetDesiredState( swerveModuleStates[0] );
         mFrontRight.SetDesiredState( swerveModuleStates[1] );
@@ -127,38 +135,51 @@ public class Drivetrain {
 
 
 
-    public void StartingHomingPods () {
+    public void StartHomingSwervePods () {
         mFrontLeft.StartHoming();
+        mFrontRight.StartHoming();
         mRearLeft.StartHoming();
-        mFrontRight.StartHoming();
-        mFrontRight.StartHoming();
+        mRearRight.StartHoming();
 
     }
 
 
-    public void HomingPodsUpdate () {
-        if ( !mIsHomingFinshed ) {
-            if ( mFrontLeft.GetIsHomingFinshed() && mRearLeft.GetIsHomingFinshed() && mFrontRight.GetIsHomingFinshed() && mFrontRight.GetIsHomingFinshed() ) {
-                mIsHomingFinshed = true;
-                mFrontLeft.ResetEncoders();
-                mRearLeft.ResetEncoders();
-                mFrontRight.ResetEncoders();
-                mFrontRight.ResetEncoders();
+    public void HomingSwervePodsUpdate () {
+        if ( !IsHomingFinshed ) {
+            if ( mFrontLeft.IsHomingFinshed() && 
+                 mFrontRight.IsHomingFinshed() &&
+                 mRearLeft.IsHomingFinshed() &&  
+                 mRearRight.IsHomingFinshed() ) {
+                IsHomingFinshed = true;
             } else {
                 mFrontLeft.HomingUpdate();
+                mFrontRight.HomingUpdate();
                 mRearLeft.HomingUpdate();
-                mFrontRight.HomingUpdate();
-                mFrontRight.HomingUpdate();
+                mRearRight.HomingUpdate();
             }
         }
     }
 
     
-    public boolean GetIsHomingFinshed () {
-        return mIsHomingFinshed;
+    public boolean IsHomingFinshed () {
+        return IsHomingFinshed;
+    }
+
+    public void SetIsHomingFinshed () {
+        IsHomingFinshed = true;
+        DriverStation.reportWarning( "Swerve homing timeout: FrontLeft: "+mFrontLeft.IsHomingFinshed()+
+                                                         ", FrontRight: "+mFrontRight.IsHomingFinshed()+                                                 
+                                                           ", RearLeft: "+mRearLeft.IsHomingFinshed()+                                                       
+                                                          ", RearRight: "+mRearRight.IsHomingFinshed(), false);
     }
 
 
+    // public void ResetHoming () {
+    //     mFrontLeft.ResetHoming();
+    //     mFrontRight.ResetHoming();
+    //     mRearLeft.ResetHoming();
+    //     mRearRight.ResetHoming();
+    // }
 
 
 
@@ -167,8 +188,8 @@ public class Drivetrain {
      */
     public void ResetEncoders() {
         mFrontLeft.ResetEncoders();
-        mRearLeft.ResetEncoders();
         mFrontRight.ResetEncoders();
+        mRearLeft.ResetEncoders();
         mRearRight.ResetEncoders();
     }
 
@@ -199,7 +220,7 @@ public class Drivetrain {
     * The constructor for the Drivetrain class.
     */  
     public Drivetrain () {
-        mIsHomingFinshed = false;
+        IsHomingFinshed = false;
     }
 
 }
