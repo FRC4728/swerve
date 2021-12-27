@@ -2,7 +2,6 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveOdometry;
@@ -10,6 +9,7 @@ import edu.wpi.first.wpilibj.util.Units;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import frc.robot.Constants.DRIVETRAIN;
+import frc.robot.Constants.DRIVER;
 import frc.robot.Constants.HARDWARE;
 
 public class Drivetrain {
@@ -24,6 +24,7 @@ public class Drivetrain {
                         false,
                         true,
                         DRIVETRAIN.FRONT_LEFT_ZERO_RAD ); 
+
     private final SwervePod mRearLeft =
         new SwervePod(  "RearLeft",
                         HARDWARE.REAR_LEFT_DRIVE_MOTOR_ID,
@@ -34,6 +35,7 @@ public class Drivetrain {
                         false,
                         true,
                         DRIVETRAIN.REAR_LEFT_ZERO_RAD );
+
     private final SwervePod mFrontRight =
         new SwervePod(  "FrontRight",
                         HARDWARE.FRONT_RIGHT_DRIVE_MOTOR_ID,
@@ -44,6 +46,7 @@ public class Drivetrain {
                         true,
                         true,
                         DRIVETRAIN.FRONT_RIGHT_ZERO_RAD );
+
     private final SwervePod mRearRight =
         new SwervePod(  "RearRight",
                         HARDWARE.REAR_RIGHT_DRIVE_MOTOR_ID,
@@ -54,87 +57,61 @@ public class Drivetrain {
                         true,
                         true,
                         DRIVETRAIN.REAR_RIGHT_ZERO_RAD );
-    private final Gyro mGyro = new ADXRS450_Gyro();
+
+    private final Translation2d mFrontLeftLocation = 
+        new Translation2d( Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
+                           Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 );
+    private final Translation2d mFrontRightLocation = 
+        new Translation2d( Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
+                           -Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 );
+    private final Translation2d mRearLeftLocation = 
+        new Translation2d( -Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
+                           Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 );
+    private final Translation2d mRearRightLocation = 
+       new Translation2d( -Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
+                          -Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 );
+
     private final SwerveDriveKinematics kDriveKinematics =
-        new SwerveDriveKinematics(
-            new Translation2d(  Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
-                                Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 ),
-            new Translation2d(  Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
-                                -Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 ),
-            new Translation2d(  -Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
-                                Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 ),
-            new Translation2d(  -Units.inchesToMeters( DRIVETRAIN.WHEEL_BASE_INCH ) / 2,
-                                -Units.inchesToMeters( DRIVETRAIN.TRACK_WIDTH_INCH ) / 2 ) );
+        new SwerveDriveKinematics( mFrontLeftLocation, mFrontRightLocation,
+                                   mRearLeftLocation, mRearRightLocation);
+
+    private final Gyro mGyro = new ADXRS450_Gyro();
+
     private SwerveDriveOdometry mOdometry =
         new SwerveDriveOdometry( kDriveKinematics, mGyro.getRotation2d() );
-        private boolean IsHomingFinshed;
 
-    /**
-     * Output telemetry to the network tables.
-     */  
-    public void OutputTelemetry () {
-        mFrontLeft.OutputTelemetry();
-        mFrontRight.OutputTelemetry();
-        mRearLeft.OutputTelemetry();
-        mRearRight.OutputTelemetry();
-    }
+    private boolean IsHomingFinshed;
+
+
+    //-------------------------------------------------------------------------------------------//
+    /*                                      PUBLIC METHODS                                       */
+    //-------------------------------------------------------------------------------------------//
 
 
     /**
-     *  This function will make periodic updates.
-     */  
-    public void PeriodicUpdate () {
-        mOdometry.update( mGyro.getRotation2d(), 
-                          mFrontLeft.GetState(),
-                          mFrontRight.GetState(), 
-                          mRearLeft.GetState(), 
-                          mRearRight.GetState());
-    }
-
-
-    /**
-     * Returns the currently-estimated pose of the robot.
-     *
-     * @return The pose.
+     * Get the status of the swerve pods homing.
+     * @return True when all pods have finished homing, false otherwise.
      */
-    public Pose2d GetPose() {
-        return mOdometry.getPoseMeters();
+    public boolean IsHomingFinshed () {
+        return IsHomingFinshed;
     }
-
 
     /**
-     * Resets the odometry to the specified pose.
-     *
-     * @param pose The pose to which to set the odometry.
+     * This function will forcibly stop all swerve pod homing routines and
+     * report the status of each. If this method is called, it means that the
+     * homing routine needs to tuned up to finished within the alloted time.
      */
-    public void ResetOdometry ( Pose2d pose ) {
-        mOdometry.resetPosition( pose, mGyro.getRotation2d() );
+    public void SetIsHomingFinshed () {
+        IsHomingFinshed = true;
+        DriverStation.reportWarning( "Swerve homing timeout: FrontLeft: "+mFrontLeft.IsHomingFinshed()+
+                                                         ", FrontRight: "+mFrontRight.IsHomingFinshed()+                                                 
+                                                           ", RearLeft: "+mRearLeft.IsHomingFinshed()+                                                       
+                                                          ", RearRight: "+mRearRight.IsHomingFinshed(), false);
     }
-
 
     /**
-     * Method to drive the robot using joystick info.
-     *
-     * @param xSpeed Speed of the robot in the x direction (forward).
-     * @param ySpeed Speed of the robot in the y direction (sideways).
-     * @param rot Angular rate of the robot.
-     * @param fieldRelative Whether the provided x and y speeds are relative to the field.
+     * Start the homing routine of the swerve pods.
      */
-    public void Drive (double xSpeed, double ySpeed, double rot, boolean fieldRelative) {
-        var swerveModuleStates = kDriveKinematics.toSwerveModuleStates(
-            fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rot, mGyro.getRotation2d() )
-                          : new ChassisSpeeds( xSpeed, ySpeed, rot ) );
-        SwerveDriveKinematics.normalizeWheelSpeeds( swerveModuleStates, DRIVETRAIN.MAX_DRIVE_VELOCITY_MPS );
-
-        mFrontLeft.SetDesiredState( swerveModuleStates[0] );
-        mFrontRight.SetDesiredState( swerveModuleStates[1] );
-        mRearLeft.SetDesiredState( swerveModuleStates[2] );
-        mRearRight.SetDesiredState( swerveModuleStates[3] );
-    }
-    
-
-
-
     public void StartHomingSwervePods () {
         mFrontLeft.StartHoming();
         mFrontRight.StartHoming();
@@ -143,7 +120,12 @@ public class Drivetrain {
 
     }
 
-
+    /**
+     * Update the homing routine of the swerve pods. If all of the pods have
+     * finished, then set IsHomingFinshed. In the case were some pods have
+     * finished and some have not, it doesn't hurt to call a homing update
+     * on the finished pods.
+     */
     public void HomingSwervePodsUpdate () {
         if ( !IsHomingFinshed ) {
             if ( mFrontLeft.IsHomingFinshed() && 
@@ -160,67 +142,104 @@ public class Drivetrain {
         }
     }
 
+    /**
+     * Teleop interface to drive the robot.
+     * 
+     * TODO: The field relative driving requires an accurate measure of the
+     * robots heading. Need to come up with a process to ensure accurate
+     * heading measurements througout the match (like when to do heading
+     * resets, and etc.).
+     *
+     * @param xSpeed Speed of the robot in the x direction (forward).
+     * @param ySpeed Speed of the robot in the y direction (sideways).
+     * @param rot Rate of the robot rotation.
+     * @param fieldRelative Whether the provided x and y speeds are relative to
+     * the field or the robot.
+     */
+    public void Drive (double xSpeed, double ySpeed, double rot, boolean fieldRelative) {
+        var swerveModuleStates = kDriveKinematics.toSwerveModuleStates(
+            fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rot, mGyro.getRotation2d() )
+                          : new ChassisSpeeds( xSpeed, ySpeed, rot ) );
     
-    public boolean IsHomingFinshed () {
-        return IsHomingFinshed;
+        // Clamp the wheel speeds to what the driver/robot are capable of
+        // handling.
+        SwerveDriveKinematics.normalizeWheelSpeeds( swerveModuleStates, DRIVER.MAX_DRIVE_VELOCITY_MPS );
+
+        mFrontLeft.SetDesiredState( swerveModuleStates[0] );
+        mFrontRight.SetDesiredState( swerveModuleStates[1] );
+        mRearLeft.SetDesiredState( swerveModuleStates[2] );
+        mRearRight.SetDesiredState( swerveModuleStates[3] );
     }
 
-    public void SetIsHomingFinshed () {
-        IsHomingFinshed = true;
-        DriverStation.reportWarning( "Swerve homing timeout: FrontLeft: "+mFrontLeft.IsHomingFinshed()+
-                                                         ", FrontRight: "+mFrontRight.IsHomingFinshed()+                                                 
-                                                           ", RearLeft: "+mRearLeft.IsHomingFinshed()+                                                       
-                                                          ", RearRight: "+mRearRight.IsHomingFinshed(), false);
+
+    //-------------------------------------------------------------------------------------------//
+    /*                                     PRIVATE METHODS                                       */
+    //-------------------------------------------------------------------------------------------//
+
+
+    /**
+     * This function will make periodic updates to the state of the swerve
+     * pods. The order of the pods MUST match the order of the constructor
+     * of the SwerveDriveKinematics.
+     */  
+    private void UpdateOdometry () {
+        mOdometry.update( mGyro.getRotation2d(), 
+                          mFrontLeft.GetState(),
+                          mFrontRight.GetState(), 
+                          mRearLeft.GetState(), 
+                          mRearRight.GetState());
     }
-
-
-    // public void ResetHoming () {
-    //     mFrontLeft.ResetHoming();
-    //     mFrontRight.ResetHoming();
-    //     mRearLeft.ResetHoming();
-    //     mRearRight.ResetHoming();
-    // }
-
-
 
     /** 
-     * Resets the drive encoders to currently read a position of 0.
-     */
-    public void ResetEncoders() {
-        mFrontLeft.ResetEncoders();
-        mFrontRight.ResetEncoders();
-        mRearLeft.ResetEncoders();
-        mRearRight.ResetEncoders();
-    }
-
-    /** Zeroes the heading of the robot. */
-    public void ZeroHeading() {
+     * Reset the robots heading to 0.
+     * */
+    private void ResetHeading () {
         mGyro.reset();
     }
 
-    /**
-     * Returns the heading of the robot.
-     *
-     * @return the robot's heading in degrees, from -180 to 180
-     */
-    public double GetHeading() {
-        return mGyro.getRotation2d().getDegrees();
-    }
+    // /**
+    //  * Get the robots heading.
+    //  *
+    //  * @return the robots heading in degrees (-180 to 180)
+    //  */
+    // private double GetHeading() {
+    //     return mGyro.getRotation2d().getDegrees();
+    // }
+
+    // /**
+    //  * Get the robots rate of turn.
+    //  *
+    //  * @return The turn rate of the robot (degrees per second)
+    //  */
+    // private double GetTurnRate() {
+    //     return mGyro.getRate();
+    // }
+
+
+    //-------------------------------------------------------------------------------------------//
+    /*                            CONSTRUCTOR AND PERIODIC METHODS                               */
+    //-------------------------------------------------------------------------------------------//
+
 
     /**
-     * Returns the turn rate of the robot.
-     *
-     * @return The turn rate of the robot, in degrees per second
-     */
-    public double GetTurnRate() {
-        return mGyro.getRate();
-    }
-
-    /**
-    * The constructor for the Drivetrain class.
-    */  
+     * The constructor for the Drivetrain class.
+     */  
     public Drivetrain () {
         IsHomingFinshed = false;
+        ResetHeading();
     }
+
+    /**
+     * This function will make the periodic updates and thus should be called
+     * periodically.
+     */  
+    public void PeriodicUpdate () {
+        mFrontLeft.PeriodicUpdate();
+        mFrontRight.PeriodicUpdate();
+        mRearLeft.PeriodicUpdate();
+        mRearRight.PeriodicUpdate();
+        UpdateOdometry();
+    }
+
 
 }
