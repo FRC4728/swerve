@@ -102,6 +102,10 @@ public class Drivetrain {
      * homing routine needs to tuned up to finished within the alloted time.
      */
     public void SetIsHomingFinshed () {
+        mFrontLeft.SetIsHomingFinshed();
+        mFrontRight.SetIsHomingFinshed();
+        mRearLeft.SetIsHomingFinshed();
+        mRearRight.SetIsHomingFinshed();        
         IsHomingFinshed = true;
         DriverStation.reportWarning( "Swerve homing timeout: FrontLeft: "+mFrontLeft.IsHomingFinshed()+
                                                          ", FrontRight: "+mFrontRight.IsHomingFinshed()+                                                 
@@ -117,7 +121,6 @@ public class Drivetrain {
         mFrontRight.StartHoming();
         mRearLeft.StartHoming();
         mRearRight.StartHoming();
-
     }
 
     /**
@@ -195,6 +198,11 @@ public class Drivetrain {
      * */
     private void ResetHeading () {
         mGyro.reset();
+    }
+
+
+    public void CalibrateGyro () {
+        mGyro.calibrate();
     }
 
     // /**

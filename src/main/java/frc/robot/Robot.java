@@ -58,6 +58,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
+        mDrivetrain.CalibrateGyro();
         // TODO: Currently, the homing will only execute the first time teleop
         // is run after powering up. In other words, is teleop is disabled and
         // restarted, homing will not be run. Need a homing plan that satisfies
@@ -79,13 +80,13 @@ public class Robot extends TimedRobot {
                 mDrivetrain.SetIsHomingFinshed(); 
             }
 
-        } else {
-            // These signs are setup for my APEM joysticks
-            final var xSpeed = mXSpeedLimiter.calculate( applyDeadband( mDriverRightJoystick.getX(), 0.02 ) ) * DRIVER.MAX_DRIVE_VELOCITY_MPS;
-            final var ySpeed = -mYSpeedLimiter.calculate( applyDeadband( mDriverRightJoystick.getY(), 0.02 ) ) * DRIVER.MAX_DRIVE_VELOCITY_MPS;
-            final var rotSpeed = mRotLimiter.calculate( applyDeadband( mDriverLeftJoystick.getY(), 0.02 ) ) * DRIVER.MAX_DRIVE_ANGULAR_VELOCITY_RPS;
-            mDrivetrain.Drive(xSpeed, ySpeed, rotSpeed, true);
-        }
+        } //else {
+            // // These signs are setup for my APEM joysticks
+            // final var xSpeed = mXSpeedLimiter.calculate( applyDeadband( mDriverRightJoystick.getX(), 0.02 ) ) * DRIVER.MAX_DRIVE_VELOCITY_MPS;
+            // final var ySpeed = -mYSpeedLimiter.calculate( applyDeadband( mDriverRightJoystick.getY(), 0.02 ) ) * DRIVER.MAX_DRIVE_VELOCITY_MPS;
+            // final var rotSpeed = mRotLimiter.calculate( applyDeadband( mDriverRightJoystick.getZ(), 0.02 ) ) * DRIVER.MAX_DRIVE_ANGULAR_VELOCITY_RPS;
+            // mDrivetrain.Drive(xSpeed, ySpeed, rotSpeed, true);
+        //}
     }
     
 

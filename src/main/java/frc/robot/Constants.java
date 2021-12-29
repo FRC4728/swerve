@@ -71,7 +71,7 @@ public final class Constants {
     // These should be updated based on what the driver wants or is capable
     // of using.
     public static final class DRIVER {
-        public static final double MAX_DRIVE_VELOCITY_MPS = 2.0;                // The maximum drive velocity
+        public static final double MAX_DRIVE_VELOCITY_MPS = 2.5;                // The maximum drive velocity
         public static final double MAX_DRIVE_ANGULAR_VELOCITY_RPS = Math.PI;    // The maximum drive rotation velocity
         public static final int DRIVE_X_SLEW_RATE = 3;                          // The units per second max change in the X-direction
         public static final int DRIVE_Y_SLEW_RATE = 3;                          // The units per second max change in the Y-direction

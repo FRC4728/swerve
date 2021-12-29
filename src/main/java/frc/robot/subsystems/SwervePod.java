@@ -58,6 +58,18 @@ public class SwervePod {
     }
 
     /**
+     * This function will forcibly stop homing the swerve pod.
+     */
+    public void SetIsHomingFinshed () {
+        mIsHomingFinshed = true;
+        mDriveOutput = 0.0;
+        mTurnOutput = 0.0;
+        mDriveMotor.set( mDriveOutput );
+        mTurnMotor.set( mTurnOutput );
+        ResetEncoders(); 
+    }
+
+    /**
      * Start the homing routine by resetting the turning controller with the
      * current turning sensor reading and the homing goal. The homing goal is
      * calculated by using the zeroing encoders power-on value and subracting
