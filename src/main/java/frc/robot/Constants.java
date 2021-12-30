@@ -59,6 +59,7 @@ public final class Constants {
         public static final double DRIVE_D_GAIN = 0.0;                          // The D-gain of the PID driving controller
         public static final double MAX_TURN_VELOCITY_RPS = 20*Math.PI;          // The maximum angular velocity - used for constraining trajectory profile
         public static final double MAX_TURN_ACCELERATION_RPSS = 20*Math.PI;     // The maximum angular acceleration - used for constraining trajectory profile
+        public static final double MAX_DRIVE_VELOCITY_MPS = 2.5;                // The maximum drive velocity
 
         // And these should be checked before every match.
         public static final double FRONT_LEFT_ZERO_RAD = 3.20;                  // The PWM encoder angle for zero'ing the wheel
@@ -68,15 +69,22 @@ public final class Constants {
         
     }
 
-    // These should be updated based on what the driver wants or is capable
-    // of using.
+    /**
+     * These should be updated based on what the driver wants or is capable
+     * of using.
+     */
     public static final class DRIVER {
-        public static final double MAX_DRIVE_VELOCITY_MPS = 2.5;                // The maximum drive velocity
-        public static final double MAX_DRIVE_ANGULAR_VELOCITY_RPS = Math.PI;    // The maximum drive rotation velocity
-        public static final int DRIVE_X_SLEW_RATE = 3;                          // The units per second max change in the X-direction
-        public static final int DRIVE_Y_SLEW_RATE = 3;                          // The units per second max change in the Y-direction
-        public static final int DRIVE_ROT_SLEW_RATE = 3;                        // The units per second max change in the rotation    
+        public static final double MAX_DRIVE_VELOCITY = 2.5;                // The maximum drive velocity
+        public static final double MAX_ROTATION_VELOCITY = Math.PI;              // The maximum drive rotation velocity
+        public static final double JOYSTICK_DEADBAND = 0.02;                    // The joystick deadband
+        public static final int DRIVE_SLEW_RATE_LIMITER = 3;                    // The units per second max change
     }
+
+
+    public static final class CONTROL {
+        public static final double LOOP_TIME_S = 0.005;                         // The update manager loop time
+    }
+
 
 
 }
