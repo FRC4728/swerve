@@ -21,6 +21,7 @@ import frc.robot.Constants.CONTROL;
 public class SwerveModule {
 
     private final String mName;
+    private final double mHome;
     private final CANSparkMax mDriveMotor;
     private final CANSparkMax mTurnMotor;
     private final CANEncoder mDriveEncoder;
@@ -30,6 +31,8 @@ public class SwerveModule {
     private final DutyCycle mZeroingEncoder;
     private final PIDController mDrivePIDController;
     private final ProfiledPIDController mTurnPIDController;
+    private double mTurnTarget;
+    private double mDriveTarget;
 
 
     //-------------------------------------------------------------------------------------------//
@@ -65,6 +68,32 @@ public class SwerveModule {
         return mTurnPIDController.atGoal();
     }  
 
+    public synchronized double GetTurnDistance () {
+        return mIsTurnEncoderReversed ? -( mTurnEncoder.getDistance() + 0.00001 )
+                                      : mTurnEncoder.getDistance() + 0.00001;
+    }
+
+    public synchronized void SetTurnTarget ( double turnTarget ) {
+        mTurnTarget = turnTarget;
+    }
+
+    public synchronized void SetDriveTarget ( double driveTarget ) {
+        mDriveTarget = driveTarget;
+    }
+
+    public synchronized double GetTurnTarget () {
+        return mTurnTarget;
+    }
+
+    public synchronized double GetDriveTarget () {
+        return mDriveTarget;
+    }
+
+    public double GetHomePosition () {
+        return mHome;
+    }
+
+
     /**
      * Zeros all the swerve module encoders.
      */
@@ -87,14 +116,21 @@ public class SwerveModule {
      * @param desiredState Desired state with speed and angle.
      */
     public void SetState ( SwerveModuleState DesiredState ) {
+
         SwerveModuleState state = SwerveModuleState.optimize( DesiredState,
             new Rotation2d( GetTurnDistance() ) );
+
+        SetDriveTarget( state.speedMetersPerSecond );            
+        SetTurnTarget( state.angle.getRadians() );
+
         double driveOutput = mDrivePIDController.calculate(  GetDriveVelocity(),
             state.speedMetersPerSecond );
+        
         double turnOutput = mTurnPIDController.calculate( GetTurnDistance(),
             state.angle.getRadians() );
 
-        mDriveMotor.set( driveOutput );
+        // mDriveMotor.set( driveOutput );
+        mDriveMotor.set( 0.0 );
         mTurnMotor.set( turnOutput );
     }
 
@@ -120,10 +156,7 @@ public class SwerveModule {
      * oscillations.
      * @return The turning encoder distance (radians)
      */
-    private double GetTurnDistance () {
-        return mIsTurnEncoderReversed ? -( mTurnEncoder.getDistance() + 0.00001 )
-                                      : mTurnEncoder.getDistance() + 0.00001;
-    }
+
 
     /**
      * Get the drive encoder velocity.
@@ -173,7 +206,7 @@ public class SwerveModule {
      * @param isTurnEncoderReversed a flag to negate the turning encoder values
      */
     public SwerveModule ( String name, ShuffleboardLayout layout, int driveMotorID, int turnMotorID,
-                          int quadAChannel, int quadBChannel, int pwmChannel,
+                          double home, int quadAChannel, int quadBChannel, int pwmChannel,
                           boolean isDriveEncoderReversed, boolean isTurnEncoderReversed ) {
 
         mDriveMotor = new CANSparkMax( driveMotorID, MotorType.kBrushless );
@@ -194,12 +227,16 @@ public class SwerveModule {
         ResetEncoders();
 
         mName = name;
+        mHome = home;
         mIsDriveEncoderReversed = isDriveEncoderReversed;
         mIsTurnEncoderReversed = isTurnEncoderReversed;
 
 
-        layout.addNumber("Absolute", () -> GetTurnAbsolutePosition() );
-        layout.addBoolean("AtGoal", ()-> GetTurnControllerAtGoal() );
+        layout.addNumber( "TurnAbsolute", () -> GetTurnAbsolutePosition() );
+        layout.addNumber( "TurnQuad", () -> GetTurnDistance() );
+        layout.addNumber( "TurnTarget", () -> GetTurnTarget() );
+        layout.addBoolean( "TurnAtGoal", ()-> GetTurnControllerAtGoal() );
+        layout.addNumber( "TurnHome", ()-> GetHomePosition() );
     }
 
 }

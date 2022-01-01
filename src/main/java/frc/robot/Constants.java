@@ -62,10 +62,10 @@ public final class Constants {
         public static final double MAX_DRIVE_VELOCITY_MPS = 2.5;                // The maximum drive velocity
 
         // And these should be checked before every match.
-        public static final double FRONT_LEFT_ZERO_RAD = 3.20;                  // The PWM encoder angle for zero'ing the wheel
-        public static final double REAR_LEFT_ZERO_RAD = 2.30;                   // The PWM encoder angle for zero'ing the wheel
-        public static final double FRONT_RIGHT_ZERO_RAD = 3.30;                 // The PWM encoder angle for zero'ing the wheel
-        public static final double REAR_RIGHT_ZERO_RAD = 3.19;                  // The PWM encoder angle for zero'ing the wheel
+        public static final double FRONT_LEFT_ZERO_RAD = 3.11;                  // The PWM encoder angle for zero'ing the wheel
+        public static final double FRONT_RIGHT_ZERO_RAD = 3.43;                 // The PWM encoder angle for zero'ing the wheel
+        public static final double REAR_LEFT_ZERO_RAD = 2.33;                   // The PWM encoder angle for zero'ing the wheel
+        public static final double REAR_RIGHT_ZERO_RAD = 0.14;                  // The PWM encoder angle for zero'ing the wheel
         
     }
 

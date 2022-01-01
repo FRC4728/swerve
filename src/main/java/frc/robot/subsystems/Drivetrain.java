@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import frc.robot.Constants.DRIVETRAIN;
 import frc.robot.Constants.HARDWARE;
@@ -32,7 +31,6 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
         Following { @Override public String toString() { return "Following"; } },
         Idle { @Override public String toString() { return "Idle"; } },
     }
-    private State_t mState;
 
     // The physical position of the swerve modules relative to the center of
     // the robot are used for the swerve drive kinematics which in turn is
@@ -53,27 +51,23 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
         new SwerveDriveKinematics( mFrontLeftLocation, mFrontRightLocation,
                                    mRearLeftLocation, mRearRightLocation);
     
+    
     private final SwerveModule[] mModules;
     private final SwerveDriveOdometry mOdometry;
     private final Gyro mGyro;
     private SwerveDriveSignal mDriveSignal;
+    private double[] mHomes = new double[]{0, 0, 0, 0};
+    private State_t mState = State_t.Homing;
+    private State_t mNextState = State_t.Homing;
 
     private final NetworkTableEntry mOdometryXEntry;
     private final NetworkTableEntry mOdometryYEntry;
     private final NetworkTableEntry mOdometryHeadingEntry;
+    private final NetworkTableEntry mStateEntry;
 
     //-------------------------------------------------------------------------------------------//
     /*                                      PUBLIC METHODS                                       */
     //-------------------------------------------------------------------------------------------//
-
-    public void HomeModules () {
-        State_t state = GetState();
-        if ( state != State_t.Idle ) {
-            SetState( State_t.Homing );
-        } else {
-            DriverStation.reportWarning( "Cannot zero modules from state: "+state, false);
-        }
-    }
 
 
     /**
@@ -214,6 +208,7 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                               tab.getLayout("Front Left Module", BuiltInLayouts.kList).withPosition(2, 0).withSize(2, 4),
                               HARDWARE.FRONT_LEFT_DRIVE_MOTOR_ID, 
                               HARDWARE.FRONT_LEFT_TURN_MOTOR_ID,
+                              DRIVETRAIN.FRONT_LEFT_ZERO_RAD,
                               HARDWARE.FRONT_LEFT_QUAD_A_DIO_CHANNEL,
                               HARDWARE.FRONT_LEFT_QUAD_B_DIO_CHANNEL, 
                               HARDWARE.FRONT_LEFT_PWM_DIO_CHANNEL,
@@ -224,6 +219,7 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                               tab.getLayout("Front Right Module", BuiltInLayouts.kList).withPosition(4, 0).withSize(2, 4),
                               HARDWARE.FRONT_RIGHT_DRIVE_MOTOR_ID,
                               HARDWARE.FRONT_RIGHT_TURN_MOTOR_ID,
+                              DRIVETRAIN.FRONT_RIGHT_ZERO_RAD,
                               HARDWARE.FRONT_RIGHT_QUAD_A_DIO_CHANNEL,
                               HARDWARE.FRONT_RIGHT_QUAD_B_DIO_CHANNEL,
                               HARDWARE.FRONT_RIGHT_PWM_DIO_CHANNEL,
@@ -234,6 +230,7 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                               tab.getLayout("Rear Left Module", BuiltInLayouts.kList).withPosition(6, 0).withSize(2, 4),
                               HARDWARE.REAR_LEFT_DRIVE_MOTOR_ID,
                               HARDWARE.REAR_LEFT_TURN_MOTOR_ID,
+                              DRIVETRAIN.REAR_LEFT_ZERO_RAD,
                               HARDWARE.REAR_LEFT_QUAD_A_DIO_CHANNEL,
                               HARDWARE.REAR_LEFT_QUAD_B_DIO_CHANNEL,
                               HARDWARE.REAR_LEFT_PWM_DIO_CHANNEL,
@@ -244,12 +241,12 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                               tab.getLayout("Rear Right Module", BuiltInLayouts.kList).withPosition(8, 0).withSize(2, 4),
                               HARDWARE.REAR_RIGHT_DRIVE_MOTOR_ID,
                               HARDWARE.REAR_RIGHT_TURN_MOTOR_ID,
+                              DRIVETRAIN.REAR_RIGHT_ZERO_RAD,
                               HARDWARE.REAR_RIGHT_QUAD_A_DIO_CHANNEL,
                               HARDWARE.REAR_RIGHT_QUAD_B_DIO_CHANNEL,
                               HARDWARE.REAR_RIGHT_PWM_DIO_CHANNEL,
                               true,
                               true );
-        mState = State_t.Idle;
         mModules = new SwerveModule[]{mFrontLeft, mFrontRight, mRearLeft, mRearRight};
         mGyro = new ADXRS450_Gyro();
         mOdometry = new SwerveDriveOdometry( kDriveKinematics, new Rotation2d( 0.0 ) );
@@ -265,7 +262,38 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
             .withPosition(0, 2)
             .withSize(1, 1)
             .getEntry();
+            mStateEntry = tab.add("State", State_t.Idle.toString() )
+            .withPosition(0, 3)
+            .withSize(1, 1)
+            .getEntry();
 
+        for (int i = 0; i < mModules.length; i++) {
+            double zero = mModules[i].GetHomePosition();
+            double absolutePosition = mModules[i].GetTurnAbsolutePosition();
+            double home = zero - absolutePosition;
+            double margin = Math.PI / 2;
+            // Make sure the module isn't too far off. The homing routine can
+            // correct for ~180 degrees of error in the initial setup.
+            if ( zero >= margin && zero <= 2 * Math.PI - margin ) {
+                if ( !( ( absolutePosition >= zero - margin ) && 
+                        ( absolutePosition <= zero + margin ) ) ) {
+                    DriverStation.reportError( "Cannot zero modules: module "+i+"distance to home "+
+                    Units.radiansToDegrees( home ), false);
+                } else if ( zero < margin ) {
+                    if ( !( ( absolutePosition > zero + 2.0 * Math.PI - margin ) || 
+                            ( absolutePosition < zero + margin ) ) ) {
+                    DriverStation.reportError( "Cannot zero modules: module "+i+"distance to home "+
+                    Units.radiansToDegrees( home ), false);
+                } else {
+                    if ( !( ( absolutePosition > zero - margin ) || 
+                            ( absolutePosition < zero + margin - 2.0 * Math.PI ) ) ) {
+                    DriverStation.reportError( "Cannot zero modules: module "+i+"distance to home "+
+                    Units.radiansToDegrees( home ), false);
+                }
+            }
+
+            mHomes[i] = home;
+        }
 
     }
 
@@ -278,6 +306,7 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
         mOdometryXEntry.setDouble( pose.getX() );
         mOdometryYEntry.setDouble( pose.getY() );
         mOdometryHeadingEntry.setDouble( pose.getRotation().getDegrees() );
+        mStateEntry.setString( GetState().toString() );
     }
 
     /**
@@ -286,54 +315,85 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
     @Override
     public void Update ( double time, double dt ) {
         
+        // Update the subsystem state
+        State_t currentState = GetState();
+        if ( !currentState.equals( mNextState ) ) {
+            switch( currentState ) {
+                case Homing:
+                for ( int i = 0; i < mModules.length; i++ ) {
+                    mModules[i].ResetEncoders();
+                }
+                break;
+
+                case Teleop:
+                for (int i = 0; i < mModules.length; i++) {
+                    mModules[i].NullOutput();
+                }                
+                break;
+
+                case Following:
+                for (int i = 0; i < mModules.length; i++) {
+                    mModules[i].NullOutput();
+                }                
+                break;
+
+                case Idle:
+                for (int i = 0; i < mModules.length; i++) {
+                    mModules[i].NullOutput();
+                }                
+                break;
+            }
+        }
+        currentState = mNextState;
+        SetState( currentState );
+
         // Read the sensor inputs
         UpdateOdometry( time );
 
-        // Set the motor outputs and update state
-        State_t state = GetState();
-        switch ( state ) {
-        case Homing:
+        // Set the motor outputs based on the current state
+        switch ( currentState ) {
+            case Homing:
             for (int i = 0; i < mModules.length; i++) {
-                mModules[i].SetState( new SwerveModuleState( 0.0, new Rotation2d( -mModules[i].GetTurnAbsolutePosition() ) ) );
-            }
+                mModules[i].SetState( new SwerveModuleState( 0.0, new Rotation2d( mHomes[i] ) ) );
+            }              
             boolean everyoneAtGoal = true;
             for ( int i = 0; i < mModules.length; i++ ) {
                 everyoneAtGoal = everyoneAtGoal && mModules[i].GetTurnControllerAtGoal();
             }
             if ( everyoneAtGoal ) {
-                for ( int i = 0; i < mModules.length; i++ ) {
-                    mModules[i].ResetEncoders();
+                mNextState = State_t.Idle;
+                // This will allow the motors/encoders to stop moving before
+                // resetting the encoders
+                for (int i = 0; i < mModules.length; i++) {
+                    mModules[i].NullOutput();
                 }
-                SetState( State_t.Teleop );
                 DriverStation.reportWarning( "Successfully homed all drivetrain wheels", false);
             }
 
+
             break;
 
-        // case Teleop:
-        //     // UpdateModules( GetDriveSignal() );
-        //     UpdateModules( new SwerveDriveSignal( 0, 0, 0, false ) );
-        //     break;
-
-        // case Following:
-        //     UpdateModules( new SwerveDriveSignal( 0, 0, 0, false ) );
-        //     break;
-
-        case Idle:
+            case Teleop:
+            // UpdateModules( GetDriveSignal() );
             for ( int i = 0; i < mModules.length; i++ ) {
                 mModules[i].NullOutput();
             }
             break;
 
-        default:
-            DriverStation.reportWarning( "Unknown drivetrain state: "+state, false);
+            case Following:
             for ( int i = 0; i < mModules.length; i++ ) {
                 mModules[i].NullOutput();
             }
+            break;
+
+            case Idle:
+            for ( int i = 0; i < mModules.length; i++ ) {
+                mModules[i].NullOutput();
+            }
+            break;
 
         }
 
     }
-
 
 }
