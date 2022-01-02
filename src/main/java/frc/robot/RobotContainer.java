@@ -16,7 +16,6 @@ public class RobotContainer {
     private final SlewRateLimiter mSpeedLimiter = new SlewRateLimiter( DRIVER.DRIVE_SLEW_RATE_LIMITER );
 
 
-    // TODO: This function will be available in the 2022 WPIlib, use it
     private double applyDeadband ( double value, double deadband ) {
         if ( Math.abs( value ) > deadband ) {
             if ( value > 0.0 ) {

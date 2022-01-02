@@ -3,6 +3,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import frc.robot.Constants.CONTROL;
 
 public class Robot extends TimedRobot {
@@ -35,6 +36,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
+        Shuffleboard.startRecording();
     }
     
 
@@ -43,7 +45,9 @@ public class Robot extends TimedRobot {
     
 
     @Override
-    public void disabledInit() {}
+    public void disabledInit() {
+        Shuffleboard.stopRecording();
+    }
     
 
     @Override

@@ -1,7 +1,9 @@
 package frc.robot;
 
-public final class Constants {
+import edu.wpi.first.wpilibj.geometry.Translation2d;
+import edu.wpi.first.wpilibj.util.Units;
 
+public final class Constants {
 
     /**
      * The physical hardware connections on the robot.
@@ -66,7 +68,21 @@ public final class Constants {
         public static final double FRONT_RIGHT_ZERO_RAD = 3.43;                 // The PWM encoder angle for zero'ing the wheel
         public static final double REAR_LEFT_ZERO_RAD = 2.33;                   // The PWM encoder angle for zero'ing the wheel
         public static final double REAR_RIGHT_ZERO_RAD = 0.14;                  // The PWM encoder angle for zero'ing the wheel
-        
+
+        // Constants based on the above calibrations
+        public static final Translation2d FRONT_LEFT_LOCATION =                 // Position relative to the robot center
+            new Translation2d( Units.inchesToMeters( WHEEL_BASE_INCH ) / 2,
+                               Units.inchesToMeters( TRACK_WIDTH_INCH ) / 2 );
+        public static final Translation2d FRONT_RIGHT_LOCATION =                // Position relative to the robot center
+            new Translation2d( Units.inchesToMeters( WHEEL_BASE_INCH ) / 2,
+                              -Units.inchesToMeters( TRACK_WIDTH_INCH ) / 2 );
+        public static final Translation2d REAR_LEFT_LOCATION =                  // Position relative to the robot center
+            new Translation2d( -Units.inchesToMeters( WHEEL_BASE_INCH ) / 2,
+                               Units.inchesToMeters( TRACK_WIDTH_INCH ) / 2 );
+        public static final Translation2d REAR_RIGHT_LOCATION =                 // Position relative to the robot center
+            new Translation2d( -Units.inchesToMeters( WHEEL_BASE_INCH ) / 2,
+                               -Units.inchesToMeters( TRACK_WIDTH_INCH ) / 2 );
+
     }
 
     /**
