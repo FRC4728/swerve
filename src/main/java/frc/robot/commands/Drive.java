@@ -21,6 +21,7 @@ public class Drive extends CommandBase {
 
     @Override
     public void execute() {
+        System.out.println("xYpeed: "+mXSpeed+" mYSpeed: "+mYSpeed+" rotation: "+ mRoation);
         mDrivetrain.Drive( mXSpeed, mYSpeed, mRoation, mFieldOriented );
     }
 

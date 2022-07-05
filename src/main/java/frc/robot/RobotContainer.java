@@ -7,6 +7,7 @@ import frc.robot.Constants.DRIVER;
 import frc.robot.Constants.HARDWARE;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.commands.Drive;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 
 public class RobotContainer {
 
@@ -27,20 +28,20 @@ public class RobotContainer {
             return 0.0;
         }
     }
-    
+
     private double GetDriveForward () {
-        return mSpeedLimiter.calculate( applyDeadband( mRightJoystick.getX(), 
-            DRIVER.JOYSTICK_DEADBAND ) ) * DRIVER.MAX_DRIVE_VELOCITY;
+        return applyDeadband( mRightJoystick.getX(), 
+            DRIVER.JOYSTICK_DEADBAND ) * DRIVER.MAX_DRIVE_VELOCITY;
     }
 
     private double GetDriveStrafe () {
-        return -mSpeedLimiter.calculate( applyDeadband( mRightJoystick.getY(),
-            DRIVER.JOYSTICK_DEADBAND ) ) * DRIVER.MAX_DRIVE_VELOCITY;
+        return -applyDeadband( mRightJoystick.getY(),
+            DRIVER.JOYSTICK_DEADBAND ) * DRIVER.MAX_DRIVE_VELOCITY;
     }
 
     private double GetDriveRotation () {
-        return mSpeedLimiter.calculate( applyDeadband( mRightJoystick.getZ(),
-            DRIVER.JOYSTICK_DEADBAND ) ) * DRIVER.MAX_ROTATION_VELOCITY;
+        return applyDeadband( mRightJoystick.getZ(),
+            DRIVER.JOYSTICK_DEADBAND ) * DRIVER.MAX_ROTATION_VELOCITY;
     }
 
     public Drivetrain GetDrivetrainSubsystem () {
@@ -48,9 +49,22 @@ public class RobotContainer {
     }
 
     public RobotContainer() {
-        CommandScheduler.getInstance().registerSubsystem( mDrivetrainSubsystem );
-        CommandScheduler.getInstance().setDefaultCommand( mDrivetrainSubsystem, 
-            new Drive( mDrivetrainSubsystem, GetDriveForward(), GetDriveStrafe(), GetDriveRotation(), true ) );
-    }
+        // CommandScheduler.getInstance().registerSubsystem( mDrivetrainSubsystem );
+        // CommandScheduler.getInstance().setDefaultCommand( mDrivetrainSubsystem, 
+        //     new Drive( mDrivetrainSubsystem, GetDriveForward(), GetDriveStrafe(), GetDriveRotation(), true ) );
+        mDrivetrainSubsystem.setDefaultCommand(
+            // The left stick controls translation of the robot.
+            // Turning is controlled by the X axis of the right stick.
+            new RunCommand(
+                () ->
+                mDrivetrainSubsystem.Drive(
+                        GetDriveForward(),
+                        GetDriveStrafe(),
+                        GetDriveRotation(),
+                        true),
+                mDrivetrainSubsystem));
+        }
+        
+
 
 }

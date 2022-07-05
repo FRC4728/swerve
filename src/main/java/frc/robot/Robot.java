@@ -18,6 +18,7 @@ public class Robot extends TimedRobot {
         // Use the live window telemetry during bringup...don't want to waste
         // time with it otherwise.
         LiveWindow.disableAllTelemetry();
+        setNetworkTablesFlushEnabled( true );
         mUpdateManager.StartLoop( CONTROL.LOOP_TIME_S );
     }
     

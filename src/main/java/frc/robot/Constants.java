@@ -56,12 +56,12 @@ public final class Constants {
         public static final double WHEEL_BASE_INCH = 17.125;                    // Distance between front and back wheels (best: calibrate with encoders, ok: use tape measure)
         public static final double TURN_P_GAIN = 0.7;                           // The P-gain of the PID turning controller
         public static final double TURN_D_GAIN = 0.01;                          // The D-gain of the PID turning controller
-        public static final double MAX_TURN_ERROR_DEG = 3.0;                    // The maximum turning controller error considered on-target
-        public static final double DRIVE_P_GAIN = 0.1;                          // The P-gain of the PID driving controller
+        public static final double MAX_TURN_ERROR_DEG = 1.0;                    // The maximum turning controller error considered on-target
+        public static final double DRIVE_P_GAIN = 0.5;                          // The P-gain of the PID driving controller
         public static final double DRIVE_D_GAIN = 0.0;                          // The D-gain of the PID driving controller
         public static final double MAX_TURN_VELOCITY_RPS = 20*Math.PI;          // The maximum angular velocity - used for constraining trajectory profile
         public static final double MAX_TURN_ACCELERATION_RPSS = 20*Math.PI;     // The maximum angular acceleration - used for constraining trajectory profile
-        public static final double MAX_DRIVE_VELOCITY_MPS = 2.5;                // The maximum drive velocity
+        public static final double MAX_DRIVE_VELOCITY_MPS = 4.0;               // The maximum drive velocity
 
         // And these should be checked before every match.
         public static final double FRONT_LEFT_ZERO_RAD = 3.11;                  // The PWM encoder angle for zero'ing the wheel
@@ -90,8 +90,8 @@ public final class Constants {
      * of using.
      */
     public static final class DRIVER {
-        public static final double MAX_DRIVE_VELOCITY = 2.5;                // The maximum drive velocity
-        public static final double MAX_ROTATION_VELOCITY = Math.PI;              // The maximum drive rotation velocity
+        public static final double MAX_DRIVE_VELOCITY = 4.0;                // The maximum drive velocity
+        public static final double MAX_ROTATION_VELOCITY = 10.0;              // The maximum drive rotation velocity
         public static final double JOYSTICK_DEADBAND = 0.02;                    // The joystick deadband
         public static final int DRIVE_SLEW_RATE_LIMITER = 3;                    // The units per second max change
     }

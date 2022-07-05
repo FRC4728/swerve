@@ -32,6 +32,8 @@ public class SwerveModule {
     private final ProfiledPIDController mTurnPIDController;
     private double mTurnTarget;
     private double mDriveTarget;
+    private double mTurnOutput;
+    private double mDriveOutput;
 
 
     //-------------------------------------------------------------------------------------------//
@@ -101,6 +103,22 @@ public class SwerveModule {
         mDriveTarget = driveTarget;
     }
 
+
+    public synchronized void SetTurnOutput ( double turnOutput ) {
+        mTurnOutput = turnOutput;
+    }
+    public synchronized double GetTurnOutput () {
+        return mTurnOutput;
+    }
+
+    public synchronized void SetDriveOutput ( double driveOutput ) {
+        mDriveOutput = driveOutput;
+    }
+    public synchronized double GetDriveOutput () {
+        return mDriveOutput;
+    }
+
+
     /**
      * Returns the current state of the swerve module.
      *
@@ -165,8 +183,10 @@ public class SwerveModule {
         double turnOutput = mTurnPIDController.calculate( GetTurnDistance(),
             state.angle.getRadians() );
 
-        driveOutput = 0.0;
-        mDriveMotor.set( driveOutput );
+        SetDriveOutput( driveOutput );
+        SetTurnOutput( turnOutput );
+
+        mDriveMotor.set( mIsDriveEncoderReversed ? -driveOutput : driveOutput );
         mTurnMotor.set( turnOutput );
     }
 
@@ -238,7 +258,12 @@ public class SwerveModule {
         layout.addNumber( "TurnTarget", () -> GetTurnTarget() );
         layout.addBoolean( "TurnAtGoal", () -> GetTurnControllerAtGoal() );
         layout.addNumber( "TurnHome", () -> GetHomePosition() );
-
+        layout.addNumber( "DriveTarget", () -> GetDriveTarget() );
+        layout.addNumber( "DriveOutput", () -> GetDriveOutput() );
+        layout.addNumber( "TurnOutput", () -> GetTurnOutput() );
+        layout.addNumber( "DriveVelocity", () -> GetDriveVelocity() );                            
+        
+        
 
     }
 

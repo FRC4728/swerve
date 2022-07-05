@@ -35,7 +35,7 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
     private final SwerveDriveKinematics mDriveKinematics;
     private final SwerveDriveOdometry mOdometry;
     private final Gyro mGyro;
-    private SwerveDriveSignal mDriveSignal;
+    private SwerveDriveSignal mDriveSignal = new SwerveDriveSignal(0, 0, 0, false);
     private double[] mHomes = new double[]{0, 0, 0, 0};
     private State_t mState = State_t.Homing;
     private State_t mNextState = State_t.Homing;
@@ -115,6 +115,9 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                                                        driveSignal.GetRotation(),
                                                        GetGyroHeading() ) );
         } else {
+            // double speed = new ChassisSpeeds( driveSignal.GetXSpeed(),
+            //                                     driveSignal.GetYSpeed(),
+            //                                     driveSignal.GetRotation() );
             swerveModuleStates = mDriveKinematics.toSwerveModuleStates(
                 new ChassisSpeeds( driveSignal.GetXSpeed(),
                                    driveSignal.GetYSpeed(),
@@ -264,6 +267,7 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
         mOdometryYEntry.setDouble( pose.getY() );
         mOdometryHeadingEntry.setDouble( pose.getRotation().getDegrees() );
         mStateEntry.setString( GetState().toString() );
+        
     }
 
     /**
@@ -283,9 +287,9 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                 break;
 
                 case Teleop:
-                for (int i = 0; i < mModules.length; i++) {
-                    mModules[i].SetNullOutput();
-                }                
+                // for (int i = 0; i < mModules.length; i++) {
+                //     mModules[i].SetNullOutput();
+                // }                
                 break;
 
                 case Following:
@@ -308,7 +312,6 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
         // Read the sensor inputs
         UpdateOdometry( time );
 
-
         // Set the motor outputs based on the current state
         switch ( currentState ) {
             case Homing:
@@ -320,7 +323,8 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
                 everyoneAtGoal = everyoneAtGoal && mModules[i].GetTurnControllerAtGoal();
             }
             if ( everyoneAtGoal ) {
-                mNextState = State_t.Idle;
+                // mNextState = State_t.Idle;
+                mNextState = State_t.Teleop;
                 // This will allow the motors/encoders to stop moving before
                 // resetting the encoders
                 for (int i = 0; i < mModules.length; i++) {
@@ -331,10 +335,10 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
             break;
 
             case Teleop:
-            // UpdateModules( GetDriveSignal() );
-            for ( int i = 0; i < mModules.length; i++ ) {
-                mModules[i].SetNullOutput();
-            }
+            UpdateModules( GetDriveSignal() );
+            // for ( int i = 0; i < mModules.length; i++ ) {
+            //     mModules[i].SetNullOutput();
+            // }
             break;
 
             case Following:
@@ -354,3 +358,4 @@ public class Drivetrain implements Subsystem, UpdateManager.Updatable {
     }
 
 }
+
